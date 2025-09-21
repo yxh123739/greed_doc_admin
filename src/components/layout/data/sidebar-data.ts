@@ -32,17 +32,17 @@ export const sidebarData: SidebarData = {
         },
         {
           title: 'Categories',
-          url: '/tasks',
+          url: '/categories',
           icon: ListTodo,
         },
         {
           title: 'Feedback',
-          url: '/apps',
+          url: '/feedbacks',
           icon: MessageSquare,
         },
         {
           title: 'Contact Requests',
-          url: '/chats',
+          url: '/contacts',
           icon: MessagesSquare,
         },
         {

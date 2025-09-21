@@ -1,9 +1,16 @@
 import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
 import { SlidersHorizontal, ArrowUpAZ, ArrowDownAZ } from 'lucide-react'
+import { fetchFeedback, type FeedbackRow } from '@/lib/supabase/queries'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
@@ -11,9 +18,8 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { fetchFeedback, type FeedbackRow } from '@/lib/supabase/queries'
 
-const route = getRouteApi('/_authenticated/apps/')
+const route = getRouteApi('/_authenticated/feedbacks/')
 
 export function Apps() {
   const { filter = '', sort: initSort = 'desc' } = route.useSearch()
@@ -32,7 +38,10 @@ export function Apps() {
     const base = items.filter((f) => {
       const role = f.role?.toLowerCase() || ''
       const other = (f.role_other || '').toLowerCase()
-      const tools = typeof f.tools === 'string' ? f.tools.toLowerCase() : JSON.stringify(f.tools || {}).toLowerCase()
+      const tools =
+        typeof f.tools === 'string'
+          ? f.tools.toLowerCase()
+          : JSON.stringify(f.tools || {}).toLowerCase()
       return role.includes(s) || other.includes(s) || tools.includes(s)
     })
     base.sort((a, b) => {
@@ -46,16 +55,21 @@ export function Apps() {
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
     navigate({
-      search: (prev) => ({
+      search: (prev: { filter?: string; sort?: string }) => ({
         ...prev,
         filter: e.target.value || undefined,
       }),
     })
   }
 
-  const handleSortChange = (sort: 'asc' | 'desc') => {
-    setSort(sort)
-    navigate({ search: (prev) => ({ ...prev, sort }) })
+  const handleSortChange = (newSort: 'asc' | 'desc') => {
+    setSort(newSort)
+    navigate({
+      search: (prev: { filter?: string; sort?: string }) => ({
+        ...prev,
+        sort: newSort,
+      }),
+    })
   }
 
   return (
@@ -74,7 +88,9 @@ export function Apps() {
       <Main fixed>
         <div>
           <h1 className='text-2xl font-bold tracking-tight'>Feedback</h1>
-          <p className='text-muted-foreground'>User feedback cards fetched from Supabase.</p>
+          <p className='text-muted-foreground'>
+            User feedback cards fetched from Supabase.
+          </p>
         </div>
         <div className='my-4 flex items-end justify-between sm:my-0 sm:items-center'>
           <div className='flex flex-col gap-4 sm:my-4 sm:flex-row'>
@@ -86,7 +102,10 @@ export function Apps() {
             />
           </div>
 
-          <Select value={sort} onValueChange={handleSortChange}>
+          <Select
+            value={sort}
+            onValueChange={handleSortChange as (value: string) => void}
+          >
             <SelectTrigger className='w-16'>
               <SelectValue>
                 <SlidersHorizontal size={18} />
@@ -119,32 +138,46 @@ export function Apps() {
                     <span className='font-bold'>{(f.role || 'U')[0]}</span>
                   </div>
                   <div>
-                    <h2 className='font-semibold'>{f.role}{f.role_other ? ` · ${f.role_other}` : ''}</h2>
-                    <p className='text-xs text-muted-foreground'>
-                      {f.created_at ? new Date(f.created_at).toLocaleString() : ''}
+                    <h2 className='font-semibold'>
+                      {f.role}
+                      {f.role_other ? ` · ${f.role_other}` : ''}
+                    </h2>
+                    <p className='text-muted-foreground text-xs'>
+                      {f.created_at
+                        ? new Date(f.created_at).toLocaleString()
+                        : ''}
                     </p>
                   </div>
                 </div>
-                <Button variant='outline' size='sm'>View</Button>
+                <Button variant='outline' size='sm'>
+                  View
+                </Button>
               </div>
               <div className='space-y-2'>
-                <p className='text-sm text-muted-foreground'>Interested tools:</p>
+                <p className='text-muted-foreground text-sm'>
+                  Interested tools:
+                </p>
                 <div className='flex flex-wrap gap-2'>
                   {(() => {
-                    const tools = Array.isArray(f.tools)
-                      ? f.tools
+                    const tools: string[] = Array.isArray(f.tools)
+                      ? f.tools.map(String)
                       : typeof f.tools === 'object' && f.tools
                         ? Object.keys(f.tools).filter((k) => f.tools[k])
                         : typeof f.tools === 'string'
                           ? [f.tools]
                           : []
-                    return tools.length
-                      ? tools.map((t: any) => (
-                          <span key={String(t)} className='rounded bg-muted px-2 py-0.5 text-xs'>
-                            {String(t)}
-                          </span>
-                        ))
-                      : <span className='text-xs text-muted-foreground'>—</span>
+                    return tools.length > 0 ? (
+                      tools.map((t: string) => (
+                        <span
+                          key={t}
+                          className='bg-muted rounded px-2 py-0.5 text-xs'
+                        >
+                          {t}
+                        </span>
+                      ))
+                    ) : (
+                      <span className='text-muted-foreground text-xs'>—</span>
+                    )
                   })()}
                 </div>
               </div>
